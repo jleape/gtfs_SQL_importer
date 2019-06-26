@@ -23,6 +23,8 @@
 import csv
 import sys
 
+feed_code = sys.argv[2] + '_' if len(sys.argv) > 2 else ''
+
 class SpecialHandler(object):
   """
   A SpecialHandler does a little extra special work for a particular
@@ -149,7 +151,7 @@ def import_file(fname, tablename, handler, COPY=True):
 
   defaultVal = 'NULL';
 
-  if not COPY:  
+  if not COPY:
     delim = ","
     insertSQL = "INSERT INTO " + tablename + " (" + cols + ") VALUES (%s);"
     func = lambda v: ((v and ("'"+v.replace("'","''")+"'")) or defaultVal)
@@ -166,9 +168,9 @@ def import_file(fname, tablename, handler, COPY=True):
 
   if COPY:
     yield "\\.\n"
-  
 
-    
+
+
 
 
 
@@ -207,12 +209,12 @@ if __name__ == "__main__":
   useCopy = True;
 
 
-  useCopy = not ("nocopy" in sys.argv[2:])
+  useCopy = not ("nocopy" in sys.argv[3:])
 
   print "begin;"
 
   for fname in fnames:
-    for statement in import_file(dirname+"/"+fname+".txt","gtfs_"+fname,
+    for statement in import_file(dirname+"/"+fname+".txt",feed_code+fname,
                                  handlers[fname],useCopy):
       print statement;
 

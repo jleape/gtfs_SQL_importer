@@ -1,3 +1,5 @@
+CREATE EXTENSION postgis;
+
 drop table gtfs_agency cascade;
 drop table gtfs_stops cascade;
 drop table gtfs_routes cascade;
@@ -34,7 +36,8 @@ create table gtfs_agency (
   agency_timezone    text ,--NOT NULL,
   agency_lang  text,
   agency_phone text,
-  agency_fare_url text
+  agency_fare_url text,
+  agency_email text
 );
 
 --related to gtfs_stops(location_type)
@@ -82,7 +85,9 @@ create table gtfs_stops (
   stop_country text,
 
   -- unofficial features
-
+  level_id text,
+  platform_name text,
+  stop_address text,
   location_type int, --FOREIGN KEY REFERENCES gtfs_location_types(location_type)
   parent_station text, --FOREIGN KEY REFERENCES gtfs_stops(stop_id)
   stop_timezone text,
@@ -90,7 +95,8 @@ create table gtfs_stops (
   -- Unofficial fields
   ,
   direction text,
-  position text
+  position text,
+  platform_code text
 );
 
 -- select AddGeometryColumn( 'gtfs_stops', 'location', #{WGS84_LATLONG_EPSG}, 'POINT', 2 );
@@ -120,7 +126,13 @@ create table gtfs_routes (
   route_type  int , --REFERENCES gtfs_route_types(route_type),
   route_url   text,
   route_color text,
-  route_text_color  text
+  route_text_color  text,
+
+  -- unofficial
+
+  route_sort_order int,
+  min_headway_minutes int,
+  eligibility_restricted int
 );
 
 create table gtfs_directions (
@@ -155,14 +167,18 @@ create table gtfs_calendar (
   friday int , --NOT NULL,
   saturday     int , --NOT NULL,
   sunday int , --NOT NULL,
-  start_date   date , --NOT NULL,
-  end_date     date  --NOT NULL
+  start_date   text , -- date NOT NULL,
+  end_date     text,  -- date NOT NULL,
+  -- unofficial
+  service_name text
 );
 
 create table gtfs_calendar_dates (
   service_id     text , --REFERENCES gtfs_calendar(service_id),
-  date     date , --NOT NULL,
-  exception_type int  --NOT NULL
+  date     text , -- date NOT NULL,
+  exception_type int,  --NOT NULL
+  -- unofficial
+  holiday_name text
 );
 
 -- The following two tables are not in the spec, but they make dealing with dates and services easier
@@ -226,8 +242,18 @@ create table gtfs_trips (
   block_id text,
   shape_id text,  
   trip_short_name text,
+  wheelchair_accessible int,
+  bikes_allowed int,
   -- unofficial features
-  trip_type text
+  trip_type text,
+  drt_max_travel_time text,
+  drt_avg_travel_time text,
+  drt_advance_book_min double precision,
+  drt_pickup_message text,
+  drt_drop_off_message text,
+  continuous_pickup_message text,
+  continuous_drop_off_message text,
+  trip_route_type text
 );
 
 create table gtfs_stop_times (
@@ -243,12 +269,23 @@ create table gtfs_stop_times (
 
   -- unofficial features
   ,
-  timepoint int
+  timepoint int,
+  start_service_area_id text,
+  end_service_area_id text,
+  start_service_area_radius double precision,
+  end_service_area_radius double precision,
+  continuous_pickup int,
+  continuous_drop_off int,
+  pickup_area_id text,
+  drop_off_area_id text,
+  pickup_service_area_radius double precision,
+  drop_off_service_area_radius double precision
 
   -- the following are not in the spec
   ,
   arrival_time_seconds int, 
-  departure_time_seconds int
+  departure_time_seconds int,
+  checkpoint_id text
 
 );
 
@@ -294,7 +331,11 @@ create table gtfs_transfers (
   -- Unofficial fields
   from_route_id text, --REFERENCES gtfs_routes(route_id)
   to_route_id text, --REFERENCES gtfs_routes(route_id)
-  service_id text --REFERENCES gtfs_calendar(service_id) ?
+  service_id text, --REFERENCES gtfs_calendar(service_id)
+  min_walk_time int,
+  min_wheelchair_time int,
+  suggested_buffer_time int,
+  wheelchair_transfer int
 );
 
 
@@ -306,6 +347,12 @@ create table gtfs_feed_info (
   feed_version text,
   feed_start_date text,
   feed_end_date text
+  -- Unofficial
+  ,
+  feed_license text,
+  feed_contact_email text,
+  feed_contact_url text,
+  feed_id text
 );
 
 
